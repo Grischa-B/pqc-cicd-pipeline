@@ -30,12 +30,26 @@ cleanup() {
   ./scripts/deploy/down.sh >/dev/null 2>&1 || true
 }
 
+image_exists() {
+  docker image inspect "$1" >/dev/null 2>&1
+}
+
 trap cleanup EXIT
 
 echo "[pipeline] Running profile: $PROFILE"
 
-echo "[pipeline] Stage 1/6: build images"
-./scripts/build/build-images.sh
+echo "[pipeline] Stage 1/6: verify Docker images"
+
+if [[ "${FORCE_REBUILD:-0}" == "1" ]]; then
+  echo "[pipeline] FORCE_REBUILD=1, rebuilding images..."
+  ./scripts/build/build-images.sh
+elif image_exists "pqc-crypto-base:local" && image_exists "pqc-tls-server:local" && image_exists "pqc-tls-client:local"; then
+  echo "[pipeline] Docker images already exist, skipping rebuild."
+  echo "[pipeline] To force rebuild, run: FORCE_REBUILD=1 ./scripts/run-pipeline.sh $PROFILE"
+else
+  echo "[pipeline] Some Docker images are missing, building images..."
+  ./scripts/build/build-images.sh
+fi
 
 echo "[pipeline] Stage 2/6: generate certificates"
 ./scripts/certs/generate-certs.sh "$PROFILE"

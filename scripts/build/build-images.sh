@@ -28,6 +28,23 @@ docker compose build
   echo
   echo "=== Container OpenSSL version ==="
   docker run --rm pqc-crypto-base:local openssl version -a
+
+  echo
+  echo "=== Container OpenSSL providers ==="
+  docker run --rm pqc-crypto-base:local openssl list -providers
+
+  echo
+  echo "=== Container OpenSSL KEM algorithms ==="
+  docker run --rm pqc-crypto-base:local bash -lc 'openssl list -kem-algorithms 2>&1 || true'
+
+  echo
+  echo "=== Container OpenSSL key exchange algorithms ==="
+  docker run --rm pqc-crypto-base:local bash -lc 'openssl list -key-exchange-algorithms 2>&1 || true'
+
+  echo
+  echo "=== Container OpenSSL TLS groups, if supported by list command ==="
+  docker run --rm pqc-crypto-base:local bash -lc 'openssl list -tls-groups 2>&1 || true'
+
   echo
   echo "=== Container Python version ==="
   docker run --rm pqc-crypto-base:local python3 --version

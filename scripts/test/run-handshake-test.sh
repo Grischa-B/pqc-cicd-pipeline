@@ -49,7 +49,7 @@ mkdir -p "artifacts/logs/${PROFILE}" "artifacts/metrics"
 
 RAW_CSV="artifacts/metrics/raw-${PROFILE}.csv"
 
-echo "profile,iteration,status,handshake_ms,expected_group,actual_group,error" > "$RAW_CSV"
+echo "profile,iteration,status,handshake_ms,expected_group,actual_group,group_evidence,tls_version,openssl_exit_code,error" > "$RAW_CSV"
 
 echo "[test] Running TLS handshakes: profile=$PROFILE repeats=$REPEATS expected_group=$EXPECTED_GROUP"
 
@@ -82,32 +82,72 @@ for i in $(seq 1 "$REPEATS"); do
   start_ns="$(date +%s%N)"
 
   set +e
-  timeout "$TIMEOUT_SECONDS" openssl s_client \
+  printf 'GET / HTTP/1.0\r\nHost: localhost\r\n\r\n' | timeout "$TIMEOUT_SECONDS" openssl s_client \
     -connect tls-server:8443 \
     -servername localhost \
     -tls1_3 \
     -groups "$TLS_GROUP" \
     -CAfile "$CERT_DIR/ca.crt" \
     -verify_return_error \
-    < /dev/null > "$LOG_FILE" 2>&1
+    -prexit \
+    > "$LOG_FILE" 2>&1
   rc=$?
   set -e
 
   end_ns="$(date +%s%N)"
   handshake_ms="$(awk "BEGIN { printf \"%.3f\", (${end_ns} - ${start_ns}) / 1000000 }")"
 
-  actual_group="$(grep -m 1 "Server Temp Key:" "$LOG_FILE" | sed -E "s/.*Server Temp Key: ([^, ]+).*/\1/" || true)"
+  actual_group="$(
+    grep -E "Server Temp Key:" "$LOG_FILE" \
+      | tail -n 1 \
+      | sed -E "s/.*Server Temp Key: ([^, ]+).*/\1/" \
+      || true
+  )"
+
+  group_evidence="openssl-output"
+
+  tls_version="$(
+    grep -E "New, TLSv1\.3|Protocol *: TLSv1\.3|Protocol version: TLSv1\.3" "$LOG_FILE" \
+      | head -n 1 \
+      | sed -E "s/.*(TLSv1\.3).*/\1/" \
+      || true
+  )"
+
+  if [[ -z "$tls_version" ]]; then
+    tls_version="unknown"
+  fi
+
+  verify_ok="false"
+  if grep -qE "Verify return code: 0 \(ok\)|Verification: OK" "$LOG_FILE"; then
+    verify_ok="true"
+  fi
+
+  connection_ok="false"
+  if [[ "$rc" -eq 0 && "$tls_version" == "TLSv1.3" && "$verify_ok" == "true" ]]; then
+    connection_ok="true"
+  fi
+
+  if [[ -z "$actual_group" && "$connection_ok" == "true" && "$TLS_GROUP" == "$EXPECTED_GROUP" ]]; then
+    actual_group="$EXPECTED_GROUP"
+    group_evidence="restricted-single-group"
+  fi
 
   if [[ -z "$actual_group" ]]; then
     actual_group="unknown"
+    group_evidence="not-found-in-output"
   fi
 
-  if [[ "$rc" -eq 0 ]]; then
-    status="success"
-    error=""
-  else
+  status="success"
+  error=""
+
+  if [[ "$rc" -ne 0 ]]; then
     status="failed"
-    error="$(tail -n 5 "$LOG_FILE" | tr '\n' ' ' || true)"
+    error="openssl s_client exited with code ${rc}"
+  fi
+
+  if [[ "$status" == "success" && "$tls_version" != "TLSv1.3" ]]; then
+    status="failed"
+    error="expected TLSv1.3, got ${tls_version}"
   fi
 
   if [[ "$status" == "success" && "$actual_group" != "$EXPECTED_GROUP" ]]; then
@@ -115,19 +155,31 @@ for i in $(seq 1 "$REPEATS"); do
     error="expected group ${EXPECTED_GROUP}, got ${actual_group}"
   fi
 
+  if [[ "$status" == "success" && "$verify_ok" != "true" ]]; then
+    status="failed"
+    error="certificate verification did not report OK"
+  fi
+
+  if [[ "$status" != "success" && -z "$error" ]]; then
+    error="$(tail -n 10 "$LOG_FILE" | tr '\n' ' ' || true)"
+  fi
+
   {
-    printf "%s,%s,%s,%s,%s,%s," \
+    printf "%s,%s,%s,%s,%s,%s,%s,%s,%s," \
       "$PROFILE" \
       "$i" \
       "$status" \
       "$handshake_ms" \
       "$EXPECTED_GROUP" \
-      "$actual_group"
+      "$actual_group" \
+      "$group_evidence" \
+      "$tls_version" \
+      "$rc"
     csv_escape "$error"
     printf "\n"
   } >> "$RAW_CSV"
 
-  echo "[test] iteration=$i status=$status handshake_ms=$handshake_ms actual_group=$actual_group"
+  echo "[test] iteration=$i status=$status handshake_ms=$handshake_ms tls=$tls_version actual_group=$actual_group evidence=$group_evidence rc=$rc"
 
   if [[ "$status" != "success" ]]; then
     echo "[test] failed iteration log: $LOG_FILE" >&2
