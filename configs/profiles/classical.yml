@@ -1,0 +1,19 @@
+name: classical
+description: "Classical TLS 1.3 baseline profile"
+tls_version: "TLSv1.3"
+library: "openssl"
+key_exchange_group: "X25519"
+signature_algorithm: "ecdsa"
+
+certificate:
+  key_type: "ec"
+  curve: "prime256v1"
+
+expected:
+  group: "X25519"
+  pqc: false
+  hybrid: false
+
+test:
+  repeats: 30
+  timeout_seconds: 10

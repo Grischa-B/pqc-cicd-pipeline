@@ -1,0 +1,23 @@
+name: pqc
+description: "Post-quantum or maximum-PQC-supported TLS profile"
+tls_version: "TLSv1.3"
+library: "openssl-oqs"
+key_exchange_group: "MLKEM768"
+signature_algorithm: "mldsa"
+
+certificate:
+  key_type: "mldsa"
+  variant: "mldsa65"
+
+expected:
+  group: "MLKEM768"
+  pqc: true
+  hybrid: false
+
+test:
+  repeats: 30
+  timeout_seconds: 10
+
+limitations:
+  allow_maximum_supported_fallback: true
+  note: "Full PQC TLS/X.509 support depends on the selected OpenSSL/OQS build."

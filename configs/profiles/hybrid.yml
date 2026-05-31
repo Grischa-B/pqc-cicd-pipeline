@@ -1,0 +1,19 @@
+name: hybrid
+description: "Hybrid TLS 1.3 profile with classical and post-quantum key exchange"
+tls_version: "TLSv1.3"
+library: "openssl-oqs"
+key_exchange_group: "X25519MLKEM768"
+signature_algorithm: "ecdsa"
+
+certificate:
+  key_type: "ec"
+  curve: "prime256v1"
+
+expected:
+  group: "X25519MLKEM768"
+  pqc: true
+  hybrid: true
+
+test:
+  repeats: 30
+  timeout_seconds: 10
