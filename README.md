@@ -103,20 +103,30 @@ The `pqc` profile uses post-quantum ML-KEM key establishment while keeping a cla
 Build Docker images:
 
 ```bash
-./scripts/build/build-images.sh
+make build
 ```
 
 Run one profile:
 
 ```bash
-./scripts/run-pipeline.sh classical
-./scripts/run-pipeline.sh hybrid
-./scripts/run-pipeline.sh pqc
+make run-classical
+make run-hybrid
+make run-pqc
 ```
 
 Run all profiles and generate a combined report:
 
 ```bash
+make run-all
+```
+
+Equivalent direct script commands are also available:
+
+```bash
+./scripts/build/build-images.sh
+./scripts/run-pipeline.sh classical
+./scripts/run-pipeline.sh hybrid
+./scripts/run-pipeline.sh pqc
 ./scripts/run-all.sh
 ```
 
@@ -125,13 +135,37 @@ Run all profiles and generate a combined report:
 Validate profile configuration files:
 
 ```bash
+make test-profiles
+```
+
+Equivalent direct command:
+
+```bash
 python3 -m unittest tests/test_profiles.py
 ```
 
 Stop the Docker Compose environment manually:
 
 ```bash
+make down
+```
+
+Equivalent direct command:
+
+```bash
 ./scripts/deploy/down.sh
+```
+
+Show Docker Compose service status:
+
+```bash
+make status
+```
+
+Remove generated runtime artifacts:
+
+```bash
+make clean
 ```
 
 Force Docker image rebuild during a pipeline run:
