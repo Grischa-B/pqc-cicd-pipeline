@@ -208,6 +208,8 @@ artifacts/
     ├── summary-pqc.json
     ├── summary-pqc.csv
     ├── summary-pqc.md
+    ├── summary-all.json
+    ├── summary-all.csv
     └── summary-all.md
 ```
 
@@ -215,6 +217,8 @@ The combined report is available at:
 
 ```text
 artifacts/reports/summary-all.md
+artifacts/reports/summary-all.csv
+artifacts/reports/summary-all.json
 ```
 
 ## Collected metrics
