@@ -239,6 +239,14 @@ The pipeline collects the following metrics:
 * server certificate size;
 * CA certificate size.
 
+## Experimental methodology
+
+The experimental methodology is described in:
+
+```text
+docs/EXPERIMENT.md
+```
+
 ## Cryptographic verification
 
 Each profile restricts TLS negotiation to a single configured group. This makes the profile verification deterministic:
