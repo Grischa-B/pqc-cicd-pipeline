@@ -32,6 +32,10 @@ jobs:
           docker compose version
           python3 --version
 
+      - name: Validate profile configuration
+        run: |
+          python3 -m unittest tests/test_profiles.py
+
       - name: Build Docker images
         run: |
           ./scripts/build/build-images.sh
