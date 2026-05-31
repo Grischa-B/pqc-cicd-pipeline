@@ -1,0 +1,58 @@
+name: PQC CI/CD Pipeline
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Profile to run"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - classical
+          - hybrid
+          - pqc
+
+jobs:
+  pqc-pipeline:
+    name: Run PQC pipeline
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show runner environment
+        run: |
+          uname -a
+          docker version
+          docker compose version
+          python3 --version
+
+      - name: Build Docker images
+        run: |
+          ./scripts/build/build-images.sh
+
+      - name: Run all profiles
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.profile == 'all' }}
+        run: |
+          ./scripts/run-all.sh
+
+      - name: Run selected profile
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.profile != 'all' }}
+        run: |
+          ./scripts/run-pipeline.sh "${{ github.event.inputs.profile }}"
+
+      - name: Upload experiment artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pqc-pipeline-artifacts-${{ github.run_id }}
+          path: |
+            artifacts/logs/
+            artifacts/metrics/
+            artifacts/reports/
+          if-no-files-found: warn
