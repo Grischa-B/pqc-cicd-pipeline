@@ -36,6 +36,19 @@ jobs:
         run: |
           python3 -m unittest tests/test_profiles.py
 
+      - name: Check script permissions
+        run: |
+          test -x scripts/build/build-images.sh
+          test -x scripts/certs/generate-certs.sh
+          test -x scripts/deploy/up.sh
+          test -x scripts/deploy/down.sh
+          test -x scripts/test/run-handshake-test.sh
+          test -x scripts/test/run-profile-tests.sh
+          test -x scripts/metrics/aggregate-results.py
+          test -x scripts/crypto/list-capabilities.sh
+          test -x scripts/run-pipeline.sh
+          test -x scripts/run-all.sh
+
       - name: Build Docker images
         run: |
           ./scripts/build/build-images.sh

@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: help build test-profiles crypto-capabilities run-classical run-hybrid run-pqc run-all clean down status
+.PHONY: help build test-profiles crypto-capabilities check run-classical run-hybrid run-pqc run-all clean down status
 
 help:
 	@echo "PQC CI/CD Pipeline Prototype"
@@ -9,6 +9,7 @@ help:
 	@echo "  make build          Build Docker images"
 	@echo "  make test-profiles  Validate profile configuration files"
 	@echo "  make crypto-capabilities  Show OpenSSL/PQC capabilities in the crypto image"
+	@echo "  make check          Run full local project smoke-test"
 	@echo "  make run-classical  Run classical TLS 1.3 profile"
 	@echo "  make run-hybrid     Run hybrid TLS 1.3 + PQC profile"
 	@echo "  make run-pqc        Run maximum-supported PQC profile"
@@ -25,6 +26,9 @@ test-profiles:
 
 crypto-capabilities:
 	./scripts/crypto/list-capabilities.sh
+
+check:
+	./scripts/check-project.sh
 
 run-classical:
 	./scripts/run-pipeline.sh classical
