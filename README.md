@@ -138,6 +138,12 @@ Validate profile configuration files:
 make test-profiles
 ```
 
+Inspect OpenSSL/PQC capabilities inside the Docker image:
+
+```bash
+make crypto-capabilities
+```
+
 Equivalent direct command:
 
 ```bash
