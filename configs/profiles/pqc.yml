@@ -1,13 +1,13 @@
 name: pqc
-description: "Post-quantum or maximum-PQC-supported TLS profile"
+description: "Maximum-supported post-quantum TLS profile with ML-KEM key exchange"
 tls_version: "TLSv1.3"
-library: "openssl-oqs"
+library: "openssl-3.5"
 key_exchange_group: "MLKEM768"
-signature_algorithm: "mldsa"
+signature_algorithm: "ecdsa"
 
 certificate:
-  key_type: "mldsa"
-  variant: "mldsa65"
+  key_type: "ec"
+  curve: "prime256v1"
 
 expected:
   group: "MLKEM768"
@@ -19,5 +19,7 @@ test:
   timeout_seconds: 10
 
 limitations:
-  allow_maximum_supported_fallback: true
-  note: "Full PQC TLS/X.509 support depends on the selected OpenSSL/OQS build."
+  profile_type: "maximum-supported-pqc"
+  key_exchange: "Post-quantum ML-KEM key exchange is required."
+  certificate_signature: "Classical ECDSA certificate is used at this stage for TLS/X.509 stability."
+  note: "Full PQC certificate support with ML-DSA/SLH-DSA can be added as an extension after the base pipeline is stable."
