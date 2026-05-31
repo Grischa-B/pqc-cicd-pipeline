@@ -1,0 +1,57 @@
+name: pqc-cicd-pipeline
+
+services:
+  tls-server:
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
+    image: pqc-tls-server:local
+    container_name: pqc_tls_server
+    volumes:
+      - ./artifacts:/artifacts
+      - ./configs:/configs:ro
+    environment:
+      PROFILE: ${PROFILE:-classical}
+      TLS_GROUP: ${TLS_GROUP:-X25519}
+    ports:
+      - "8443:8443"
+    command: >
+      bash -lc '
+        set -euo pipefail;
+
+        CERT_DIR="/artifacts/certs/$${PROFILE}";
+        LOG_DIR="/artifacts/logs/$${PROFILE}";
+
+        mkdir -p "$${LOG_DIR}";
+
+        echo "[server] starting TLS server";
+        echo "[server] profile=$${PROFILE}";
+        echo "[server] tls_group=$${TLS_GROUP}";
+        echo "[server] cert_dir=$${CERT_DIR}";
+
+        exec openssl s_server \
+          -accept 8443 \
+          -www \
+          -tls1_3 \
+          -groups "$${TLS_GROUP}" \
+          -cert "$${CERT_DIR}/server.crt" \
+          -key "$${CERT_DIR}/server.key" \
+          -CAfile "$${CERT_DIR}/ca.crt" \
+          2>&1 | tee -a "$${LOG_DIR}/server.log"
+      '
+
+  tls-client:
+    build:
+      context: .
+      dockerfile: docker/client/Dockerfile
+    image: pqc-tls-client:local
+    container_name: pqc_tls_client
+    volumes:
+      - ./artifacts:/artifacts
+      - ./configs:/configs:ro
+    environment:
+      PROFILE: ${PROFILE:-classical}
+      TLS_GROUP: ${TLS_GROUP:-X25519}
+    depends_on:
+      - tls-server
+    command: ["bash", "-lc", "sleep infinity"]
