@@ -22,8 +22,7 @@ mkdir -p \
   artifacts/certs \
   artifacts/logs \
   artifacts/metrics \
-  artifacts/reports \
-  results
+  artifacts/reports
 
 cleanup() {
   echo "[pipeline] Cleaning up Docker Compose environment..."

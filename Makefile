@@ -47,8 +47,8 @@ down:
 
 clean:
 	./scripts/deploy/down.sh
-	rm -rf artifacts/certs/* artifacts/logs/* artifacts/metrics/* artifacts/reports/* results/*
-	touch artifacts/certs/.gitkeep artifacts/logs/.gitkeep artifacts/metrics/.gitkeep artifacts/reports/.gitkeep results/.gitkeep
+	rm -rf artifacts/certs/* artifacts/logs/* artifacts/metrics/* artifacts/reports/*
+	touch artifacts/certs/.gitkeep artifacts/logs/.gitkeep artifacts/metrics/.gitkeep artifacts/reports/.gitkeep
 
 status:
 	docker compose ps

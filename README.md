@@ -183,16 +183,6 @@ Current limitations:
 * CPU and memory metrics are not collected as first-class report fields;
 * the project is a research prototype and is not intended for production cryptographic deployment.
 
-## Version
-
-Current prototype version:
-
-```text
-v0.1.0
-```
-
-See `CHANGELOG.md` for release notes.
-
 ## License
 
 MIT License.

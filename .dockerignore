@@ -10,11 +10,9 @@ artifacts/certs/*
 artifacts/logs/*
 artifacts/metrics/*
 artifacts/reports/*
-results/*
 
 # Keep local placeholders irrelevant for Docker builds
 artifacts/**/.gitkeep
-results/.gitkeep
 
 # Cryptographic material
 *.key
