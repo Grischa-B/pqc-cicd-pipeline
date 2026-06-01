@@ -21,6 +21,16 @@ def run_command(command: list[str]) -> tuple[int, str]:
         return 127, str(exc)
 
 
+def safe_float(value: str | None) -> float | None:
+    if value is None or value == "":
+        return None
+
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
 def file_size(path: Path) -> int:
     return path.stat().st_size if path.exists() else 0
 
@@ -39,47 +49,86 @@ def docker_image_id(image_name: str) -> str | None:
     return out or None
 
 
-def docker_stats(container_name: str) -> dict[str, str | None]:
-    rc, out = run_command([
-        "docker",
-        "stats",
-        "--no-stream",
-        "--format",
-        "{{.CPUPerc}},{{.MemUsage}},{{.MemPerc}},{{.NetIO}},{{.BlockIO}},{{.PIDs}}",
-        container_name,
-    ])
+def read_container_stats(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
 
-    if rc != 0 or not out:
+    with path.open(newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def numeric_summary(values: list[float]) -> dict[str, float | None]:
+    if not values:
         return {
-            "server_cpu_percent": None,
-            "server_memory_usage": None,
-            "server_memory_percent": None,
-            "server_net_io": None,
-            "server_block_io": None,
-            "server_pids": None,
+            "avg": None,
+            "max": None,
+            "min": None,
         }
 
-    parts = [part.strip() for part in out.split(",", maxsplit=5)]
-    while len(parts) < 6:
-        parts.append(None)
+    return {
+        "avg": round(sum(values) / len(values), 3),
+        "max": round(max(values), 3),
+        "min": round(min(values), 3),
+    }
+
+
+def aggregate_container_stats(path: Path) -> dict[str, Any]:
+    rows = read_container_stats(path)
+
+    cpu_values = [
+        value
+        for value in (safe_float(row.get("cpu_percent")) for row in rows)
+        if value is not None
+    ]
+
+    memory_usage_values = [
+        value
+        for value in (safe_float(row.get("memory_usage_mib")) for row in rows)
+        if value is not None
+    ]
+
+    memory_percent_values = [
+        value
+        for value in (safe_float(row.get("memory_percent")) for row in rows)
+        if value is not None
+    ]
+
+    latest_net_io = None
+    latest_block_io = None
+    latest_pids = None
+
+    if rows:
+        latest_net_io = rows[-1].get("net_io")
+        latest_block_io = rows[-1].get("block_io")
+        latest_pids = rows[-1].get("pids")
 
     return {
-        "server_cpu_percent": parts[0],
-        "server_memory_usage": parts[1],
-        "server_memory_percent": parts[2],
-        "server_net_io": parts[3],
-        "server_block_io": parts[4],
-        "server_pids": parts[5],
+        "container_stats_samples": len(rows),
+        "server_cpu_percent": numeric_summary(cpu_values),
+        "server_memory_usage_mib": numeric_summary(memory_usage_values),
+        "server_memory_percent": numeric_summary(memory_percent_values),
+        "server_net_io_latest": latest_net_io,
+        "server_block_io_latest": latest_block_io,
+        "server_pids_latest": latest_pids,
     }
 
 
 def write_flat_csv(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    flat_data: dict[str, Any] = {}
+
+    for key, value in data.items():
+        if isinstance(value, dict):
+            for nested_key, nested_value in value.items():
+                flat_data[f"{key}_{nested_key}"] = nested_value
+        else:
+            flat_data[key] = value
+
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(data.keys()))
+        writer = csv.DictWriter(f, fieldnames=list(flat_data.keys()))
         writer.writeheader()
-        writer.writerow(data)
+        writer.writerow(flat_data)
 
 
 def main() -> int:
@@ -94,6 +143,7 @@ def main() -> int:
     log_dir = root / "artifacts" / "logs" / profile
     reports_dir = root / "artifacts" / "reports"
     metrics_dir = root / "artifacts" / "metrics"
+    container_stats_csv = metrics_dir / f"container-stats-{profile}.csv"
 
     reports_dir.mkdir(parents=True, exist_ok=True)
     metrics_dir.mkdir(parents=True, exist_ok=True)
@@ -141,7 +191,7 @@ def main() -> int:
         "profile_cert_dir_size_bytes": directory_size(cert_dir),
     }
 
-    data.update(docker_stats("pqc_tls_server"))
+    data.update(aggregate_container_stats(container_stats_csv))
 
     json_path = reports_dir / f"runtime-{profile}.json"
     csv_path = metrics_dir / f"runtime-{profile}.csv"

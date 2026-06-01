@@ -138,10 +138,14 @@ def write_summary_csv(path: Path, summary: dict[str, Any]) -> None:
             "server_log_size_bytes",
             "client_logs_total_size_bytes",
             "profile_log_dir_size_bytes",
-            "server_cpu_percent",
-            "server_memory_usage",
-            "server_memory_percent",
-            "server_net_io",
+            "container_stats_samples",
+            "server_cpu_avg_percent",
+            "server_cpu_max_percent",
+            "server_memory_avg_mib",
+            "server_memory_max_mib",
+            "server_memory_percent_avg",
+            "server_memory_percent_max",
+            "server_net_io_latest",
             "openssl_version",
             "crypto_image_id",
         ])
@@ -175,10 +179,14 @@ def write_summary_csv(path: Path, summary: dict[str, Any]) -> None:
             runtime.get("server_log_size_bytes"),
             runtime.get("client_logs_total_size_bytes"),
             runtime.get("profile_log_dir_size_bytes"),
-            runtime.get("server_cpu_percent"),
-            runtime.get("server_memory_usage"),
-            runtime.get("server_memory_percent"),
-            runtime.get("server_net_io"),
+            runtime.get("container_stats_samples"),
+            (runtime.get("server_cpu_percent") or {}).get("avg"),
+            (runtime.get("server_cpu_percent") or {}).get("max"),
+            (runtime.get("server_memory_usage_mib") or {}).get("avg"),
+            (runtime.get("server_memory_usage_mib") or {}).get("max"),
+            (runtime.get("server_memory_percent") or {}).get("avg"),
+            (runtime.get("server_memory_percent") or {}).get("max"),
+            runtime.get("server_net_io_latest"),
             runtime.get("openssl_version"),
             runtime.get("crypto_image_id"),
         ])
@@ -242,10 +250,20 @@ def write_summary_md(path: Path, summary: dict[str, Any]) -> None:
     lines.append("|---|---|")
     lines.append(f"| OpenSSL version | `{runtime.get('openssl_version')}` |")
     lines.append(f"| Docker image ID | `{runtime.get('crypto_image_id')}` |")
-    lines.append(f"| Server CPU percent snapshot | `{runtime.get('server_cpu_percent')}` |")
-    lines.append(f"| Server memory usage snapshot | `{runtime.get('server_memory_usage')}` |")
-    lines.append(f"| Server memory percent snapshot | `{runtime.get('server_memory_percent')}` |")
-    lines.append(f"| Server network I/O snapshot | `{runtime.get('server_net_io')}` |")
+
+    cpu = runtime.get("server_cpu_percent") or {}
+    memory_usage = runtime.get("server_memory_usage_mib") or {}
+    memory_percent = runtime.get("server_memory_percent") or {}
+
+    lines.append(f"| Container stats samples | {runtime.get('container_stats_samples')} |")
+    lines.append(f"| Server CPU avg, % | {cpu.get('avg')} |")
+    lines.append(f"| Server CPU max, % | {cpu.get('max')} |")
+    lines.append(f"| Server memory avg, MiB | {memory_usage.get('avg')} |")
+    lines.append(f"| Server memory max, MiB | {memory_usage.get('max')} |")
+    lines.append(f"| Server memory avg, % | {memory_percent.get('avg')} |")
+    lines.append(f"| Server memory max, % | {memory_percent.get('max')} |")
+    lines.append(f"| Server network I/O latest | `{runtime.get('server_net_io_latest')}` |")
+    
     lines.append(f"| Server log size, bytes | {runtime.get('server_log_size_bytes')} |")
     lines.append(f"| Client logs total size, bytes | {runtime.get('client_logs_total_size_bytes')} |")
     lines.append(f"| Profile log directory size, bytes | {runtime.get('profile_log_dir_size_bytes')} |")

@@ -80,10 +80,14 @@ for profile in profiles:
         "server_log_size_bytes": runtime.get("server_log_size_bytes"),
         "client_logs_total_size_bytes": runtime.get("client_logs_total_size_bytes"),
         "profile_log_dir_size_bytes": runtime.get("profile_log_dir_size_bytes"),
-        "server_cpu_percent": runtime.get("server_cpu_percent"),
-        "server_memory_usage": runtime.get("server_memory_usage"),
-        "server_memory_percent": runtime.get("server_memory_percent"),
-        "server_net_io": runtime.get("server_net_io"),
+        "container_stats_samples": runtime.get("container_stats_samples"),
+        "server_cpu_avg_percent": (runtime.get("server_cpu_percent") or {}).get("avg"),
+        "server_cpu_max_percent": (runtime.get("server_cpu_percent") or {}).get("max"),
+        "server_memory_avg_mib": (runtime.get("server_memory_usage_mib") or {}).get("avg"),
+        "server_memory_max_mib": (runtime.get("server_memory_usage_mib") or {}).get("max"),
+        "server_memory_percent_avg": (runtime.get("server_memory_percent") or {}).get("avg"),
+        "server_memory_percent_max": (runtime.get("server_memory_percent") or {}).get("max"),
+        "server_net_io_latest": runtime.get("server_net_io_latest"),
         "openssl_version": runtime.get("openssl_version"),
         "crypto_image_id": runtime.get("crypto_image_id"),
     }
@@ -142,15 +146,15 @@ for row in rows:
 md_lines.append("")
 md_lines.append("## Runtime and artifact metrics")
 md_lines.append("")
-md_lines.append("| Profile | Server CPU snapshot | Server memory snapshot | Server net I/O | Cert chain, bytes | Client logs, bytes | Server cert, bytes | Server key, bytes |")
-md_lines.append("|---|---|---|---|---:|---:|---:|---:|")
+md_lines.append("| Profile | CPU avg, % | CPU max, % | Memory avg, MiB | Memory max, MiB | Net I/O latest | Cert chain, bytes | Client logs, bytes |")
+md_lines.append("|---|---:|---:|---:|---:|---|---:|---:|")
 
 for row in rows:
     md_lines.append(
-        f"| `{row['profile']}` | `{row['server_cpu_percent']}` | "
-        f"`{row['server_memory_usage']}` | `{row['server_net_io']}` | "
-        f"{row['cert_chain_size_bytes']} | {row['client_logs_total_size_bytes']} | "
-        f"{row['server_cert_size_bytes']} | {row['server_key_size_bytes']} |"
+        f"| `{row['profile']}` | {row['server_cpu_avg_percent']} | "
+        f"{row['server_cpu_max_percent']} | {row['server_memory_avg_mib']} | "
+        f"{row['server_memory_max_mib']} | `{row['server_net_io_latest']}` | "
+        f"{row['cert_chain_size_bytes']} | {row['client_logs_total_size_bytes']} |"
     )
 
 md_lines.append("")
