@@ -9,10 +9,6 @@ from typing import Any
 
 
 def read_simple_yaml_value(path: Path, key: str) -> str | None:
-    """
-    Minimal YAML-like key reader for simple profile files.
-    It intentionally avoids external dependencies.
-    """
     if not path.exists():
         return None
 
@@ -70,7 +66,46 @@ def numeric_summary(values: list[float]) -> dict[str, float | None]:
     }
 
 
+def read_csv_rows(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+
+    with path.open(newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def read_json_object(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def parse_stage_metrics(path: Path) -> dict[str, Any]:
+    rows = read_csv_rows(path)
+    durations: dict[str, float | None] = {}
+    statuses: dict[str, str] = {}
+    exit_codes: dict[str, str] = {}
+
+    for row in rows:
+        stage = row.get("stage") or "unknown"
+        durations[stage] = safe_float(row.get("duration_ms"))
+        statuses[stage] = row.get("status") or "unknown"
+        exit_codes[stage] = row.get("exit_code") or "unknown"
+
+    return {
+        "rows": rows,
+        "duration_ms_by_stage": durations,
+        "status_by_stage": statuses,
+        "exit_code_by_stage": exit_codes,
+        "total_pipeline_duration_ms": durations.get("total_pipeline"),
+    }
+
+
 def write_summary_csv(path: Path, summary: dict[str, Any]) -> None:
+    runtime = summary["runtime_metrics"]
+    stage = summary["stage_metrics"]
+
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
 
@@ -88,6 +123,10 @@ def write_summary_csv(path: Path, summary: dict[str, Any]) -> None:
             "median_handshake_ms",
             "min_handshake_ms",
             "max_handshake_ms",
+            "total_pipeline_duration_ms",
+            "cert_generation_duration_ms",
+            "test_duration_ms",
+            "report_generation_duration_ms",
             "dominant_expected_group",
             "dominant_actual_group",
             "dominant_group_evidence",
@@ -95,6 +134,16 @@ def write_summary_csv(path: Path, summary: dict[str, Any]) -> None:
             "server_key_size_bytes",
             "server_cert_size_bytes",
             "ca_cert_size_bytes",
+            "cert_chain_size_bytes",
+            "server_log_size_bytes",
+            "client_logs_total_size_bytes",
+            "profile_log_dir_size_bytes",
+            "server_cpu_percent",
+            "server_memory_usage",
+            "server_memory_percent",
+            "server_net_io",
+            "openssl_version",
+            "crypto_image_id",
         ])
 
         writer.writerow([
@@ -111,6 +160,10 @@ def write_summary_csv(path: Path, summary: dict[str, Any]) -> None:
             summary["handshake_ms"]["median"],
             summary["handshake_ms"]["min"],
             summary["handshake_ms"]["max"],
+            stage["total_pipeline_duration_ms"],
+            stage["duration_ms_by_stage"].get("generate_certificates"),
+            stage["duration_ms_by_stage"].get("run_integration_tests"),
+            stage["duration_ms_by_stage"].get("aggregate_results"),
             summary["dominant_values"]["expected_group"],
             summary["dominant_values"]["actual_group"],
             summary["dominant_values"]["group_evidence"],
@@ -118,13 +171,25 @@ def write_summary_csv(path: Path, summary: dict[str, Any]) -> None:
             summary["artifacts"]["server_key_size_bytes"],
             summary["artifacts"]["server_cert_size_bytes"],
             summary["artifacts"]["ca_cert_size_bytes"],
+            runtime.get("cert_chain_size_bytes"),
+            runtime.get("server_log_size_bytes"),
+            runtime.get("client_logs_total_size_bytes"),
+            runtime.get("profile_log_dir_size_bytes"),
+            runtime.get("server_cpu_percent"),
+            runtime.get("server_memory_usage"),
+            runtime.get("server_memory_percent"),
+            runtime.get("server_net_io"),
+            runtime.get("openssl_version"),
+            runtime.get("crypto_image_id"),
         ])
 
 
 def write_summary_md(path: Path, summary: dict[str, Any]) -> None:
-    lines: list[str] = []
-
+    runtime = summary["runtime_metrics"]
+    stage = summary["stage_metrics"]
     profile = summary["profile"]
+
+    lines: list[str] = []
 
     lines.append(f"# Summary for profile `{profile}`")
     lines.append("")
@@ -150,6 +215,17 @@ def write_summary_md(path: Path, summary: dict[str, Any]) -> None:
     lines.append(f"| Min handshake, ms | {summary['handshake_ms']['min']} |")
     lines.append(f"| Max handshake, ms | {summary['handshake_ms']['max']} |")
     lines.append("")
+    lines.append("## Pipeline stage duration")
+    lines.append("")
+    lines.append("| Stage | Status | Duration, ms |")
+    lines.append("|---|---|---:|")
+
+    for row in stage["rows"]:
+        lines.append(
+            f"| `{row.get('stage')}` | `{row.get('status')}` | {row.get('duration_ms')} |"
+        )
+
+    lines.append("")
     lines.append("## Cryptographic verification")
     lines.append("")
     lines.append("| Field | Value |")
@@ -160,6 +236,20 @@ def write_summary_md(path: Path, summary: dict[str, Any]) -> None:
     lines.append(f"| Dominant observed TLS version | `{summary['dominant_values']['tls_version']}` |")
     lines.append(f"| OpenSSL exit codes | `{summary['distributions']['openssl_exit_codes']}` |")
     lines.append("")
+    lines.append("## Runtime and resource metrics")
+    lines.append("")
+    lines.append("| Metric | Value |")
+    lines.append("|---|---|")
+    lines.append(f"| OpenSSL version | `{runtime.get('openssl_version')}` |")
+    lines.append(f"| Docker image ID | `{runtime.get('crypto_image_id')}` |")
+    lines.append(f"| Server CPU percent snapshot | `{runtime.get('server_cpu_percent')}` |")
+    lines.append(f"| Server memory usage snapshot | `{runtime.get('server_memory_usage')}` |")
+    lines.append(f"| Server memory percent snapshot | `{runtime.get('server_memory_percent')}` |")
+    lines.append(f"| Server network I/O snapshot | `{runtime.get('server_net_io')}` |")
+    lines.append(f"| Server log size, bytes | {runtime.get('server_log_size_bytes')} |")
+    lines.append(f"| Client logs total size, bytes | {runtime.get('client_logs_total_size_bytes')} |")
+    lines.append(f"| Profile log directory size, bytes | {runtime.get('profile_log_dir_size_bytes')} |")
+    lines.append("")
     lines.append("## Artifact sizes")
     lines.append("")
     lines.append("| Artifact | Size, bytes |")
@@ -167,6 +257,7 @@ def write_summary_md(path: Path, summary: dict[str, Any]) -> None:
     lines.append(f"| Server key | {summary['artifacts']['server_key_size_bytes']} |")
     lines.append(f"| Server certificate | {summary['artifacts']['server_cert_size_bytes']} |")
     lines.append(f"| CA certificate | {summary['artifacts']['ca_cert_size_bytes']} |")
+    lines.append(f"| Certificate chain | {runtime.get('cert_chain_size_bytes')} |")
     lines.append("")
     lines.append("## Distributions")
     lines.append("")
@@ -198,6 +289,8 @@ def main() -> int:
 
     root = Path(__file__).resolve().parents[2]
     raw_csv = root / "artifacts" / "metrics" / f"raw-{profile}.csv"
+    stages_csv = root / "artifacts" / "metrics" / f"stages-{profile}.csv"
+    runtime_json = root / "artifacts" / "reports" / f"runtime-{profile}.json"
     cert_dir = root / "artifacts" / "certs" / profile
     reports_dir = root / "artifacts" / "reports"
     profile_file = root / "configs" / "profiles" / f"{profile}.yml"
@@ -208,10 +301,7 @@ def main() -> int:
         print(f"[aggregate] Raw metrics not found: {raw_csv}", file=sys.stderr)
         return 1
 
-    rows: list[dict[str, str]] = []
-    with raw_csv.open(newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
+    rows = read_csv_rows(raw_csv)
 
     total = len(rows)
     successes = [r for r in rows if r.get("status") == "success"]
@@ -263,6 +353,8 @@ def main() -> int:
             "tls_versions": dict(tls_versions),
             "openssl_exit_codes": dict(openssl_exit_codes),
         },
+        "stage_metrics": parse_stage_metrics(stages_csv),
+        "runtime_metrics": read_json_object(runtime_json),
         "artifacts": {
             "server_key_size_bytes": file_size(key_file),
             "server_cert_size_bytes": file_size(cert_file),
