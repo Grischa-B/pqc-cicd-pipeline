@@ -170,5 +170,8 @@ write_stage_metric \
   "$PIPELINE_FINISHED_AT" \
   "0"
 
+echo "[pipeline] Refreshing final profile summary with complete stage metrics..."
+python3 scripts/metrics/aggregate-results.py "$PROFILE"
+
 echo "[pipeline] Profile completed successfully: $PROFILE"
 echo "[pipeline] Total duration, ms: $PIPELINE_DURATION_MS"

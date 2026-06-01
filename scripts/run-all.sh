@@ -47,6 +47,10 @@ for profile in profiles:
 
     data = json.loads(path.read_text(encoding="utf-8"))
 
+    stage = data.get("stage_metrics", {})
+    stage_durations = stage.get("duration_ms_by_stage", {})
+    runtime = data.get("runtime_metrics", {})
+
     row = {
         "profile": data["profile"],
         "description": data["profile_config"]["description"],
@@ -61,6 +65,10 @@ for profile in profiles:
         "median_handshake_ms": data["handshake_ms"]["median"],
         "min_handshake_ms": data["handshake_ms"]["min"],
         "max_handshake_ms": data["handshake_ms"]["max"],
+        "total_pipeline_duration_ms": stage.get("total_pipeline_duration_ms"),
+        "cert_generation_duration_ms": stage_durations.get("generate_certificates"),
+        "test_duration_ms": stage_durations.get("run_integration_tests"),
+        "report_generation_duration_ms": stage_durations.get("aggregate_results"),
         "dominant_expected_group": data["dominant_values"]["expected_group"],
         "dominant_actual_group": data["dominant_values"]["actual_group"],
         "dominant_group_evidence": data["dominant_values"]["group_evidence"],
@@ -68,6 +76,16 @@ for profile in profiles:
         "server_key_size_bytes": data["artifacts"]["server_key_size_bytes"],
         "server_cert_size_bytes": data["artifacts"]["server_cert_size_bytes"],
         "ca_cert_size_bytes": data["artifacts"]["ca_cert_size_bytes"],
+        "cert_chain_size_bytes": runtime.get("cert_chain_size_bytes"),
+        "server_log_size_bytes": runtime.get("server_log_size_bytes"),
+        "client_logs_total_size_bytes": runtime.get("client_logs_total_size_bytes"),
+        "profile_log_dir_size_bytes": runtime.get("profile_log_dir_size_bytes"),
+        "server_cpu_percent": runtime.get("server_cpu_percent"),
+        "server_memory_usage": runtime.get("server_memory_usage"),
+        "server_memory_percent": runtime.get("server_memory_percent"),
+        "server_net_io": runtime.get("server_net_io"),
+        "openssl_version": runtime.get("openssl_version"),
+        "crypto_image_id": runtime.get("crypto_image_id"),
     }
 
     rows.append(row)
@@ -78,7 +96,8 @@ combined = {
         "The classical profile is the TLS 1.3 baseline with X25519 key exchange.",
         "The hybrid profile uses X25519MLKEM768 as a transition profile combining classical and post-quantum key establishment.",
         "The pqc profile is a maximum-supported PQC profile using MLKEM768 key exchange with a classical ECDSA certificate for TLS/X.509 stability.",
-        "Runtime keys, certificates, logs, metrics and reports are generated artifacts and are not intended to be committed to Git.",
+        "Stage duration metrics describe the CI/CD pipeline behavior rather than pure cryptographic primitive performance.",
+        "Runtime resource metrics are collected as container snapshots and should be interpreted as engineering indicators.",
     ],
 }
 
@@ -94,15 +113,43 @@ with summary_csv.open("w", newline="", encoding="utf-8") as f:
 md_lines = []
 md_lines.append("# PQC CI/CD Pipeline Experiment Summary")
 md_lines.append("")
-md_lines.append("| Profile | Successful / Total | Success rate | Avg handshake, ms | Median handshake, ms | Expected group | Actual group | Group evidence | TLS version | Server cert, bytes | Server key, bytes |")
-md_lines.append("|---|---:|---:|---:|---:|---|---|---|---|---:|---:|")
+md_lines.append("## TLS handshake comparison")
+md_lines.append("")
+md_lines.append("| Profile | Successful / Total | Success rate | Avg handshake, ms | Median handshake, ms | Expected group | Actual group | TLS version |")
+md_lines.append("|---|---:|---:|---:|---:|---|---|---|")
 
 for row in rows:
     md_lines.append(
         f"| `{row['profile']}` | {row['successful_runs']} / {row['total_runs']} | "
         f"{row['success_rate']} | {row['avg_handshake_ms']} | {row['median_handshake_ms']} | "
         f"`{row['dominant_expected_group']}` | `{row['dominant_actual_group']}` | "
-        f"`{row['dominant_group_evidence']}` | `{row['dominant_tls_version_observed']}` | "
+        f"`{row['dominant_tls_version_observed']}` |"
+    )
+
+md_lines.append("")
+md_lines.append("## Pipeline stage duration")
+md_lines.append("")
+md_lines.append("| Profile | Total pipeline, ms | Cert generation, ms | Test stage, ms | Report generation, ms |")
+md_lines.append("|---|---:|---:|---:|---:|")
+
+for row in rows:
+    md_lines.append(
+        f"| `{row['profile']}` | {row['total_pipeline_duration_ms']} | "
+        f"{row['cert_generation_duration_ms']} | {row['test_duration_ms']} | "
+        f"{row['report_generation_duration_ms']} |"
+    )
+
+md_lines.append("")
+md_lines.append("## Runtime and artifact metrics")
+md_lines.append("")
+md_lines.append("| Profile | Server CPU snapshot | Server memory snapshot | Server net I/O | Cert chain, bytes | Client logs, bytes | Server cert, bytes | Server key, bytes |")
+md_lines.append("|---|---|---|---|---:|---:|---:|---:|")
+
+for row in rows:
+    md_lines.append(
+        f"| `{row['profile']}` | `{row['server_cpu_percent']}` | "
+        f"`{row['server_memory_usage']}` | `{row['server_net_io']}` | "
+        f"{row['cert_chain_size_bytes']} | {row['client_logs_total_size_bytes']} | "
         f"{row['server_cert_size_bytes']} | {row['server_key_size_bytes']} |"
     )
 
