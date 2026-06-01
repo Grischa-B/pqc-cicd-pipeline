@@ -45,6 +45,7 @@ jobs:
           test -x scripts/test/run-handshake-test.sh
           test -x scripts/test/run-profile-tests.sh
           test -x scripts/metrics/aggregate-results.py
+          test -x scripts/metrics/collect-runtime-metrics.py
           test -x scripts/crypto/list-capabilities.sh
           test -x scripts/run-pipeline.sh
           test -x scripts/run-all.sh

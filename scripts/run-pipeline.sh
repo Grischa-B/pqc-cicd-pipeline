@@ -94,6 +94,10 @@ stage_run_integration_tests() {
   ./scripts/test/run-profile-tests.sh "$PROFILE"
 }
 
+stage_collect_runtime_metrics() {
+  python3 scripts/metrics/collect-runtime-metrics.py "$PROFILE"
+}
+
 stage_aggregate_results() {
   python3 scripts/metrics/aggregate-results.py "$PROFILE"
 }
@@ -151,6 +155,7 @@ run_stage "generate_certificates" stage_generate_certificates
 run_stage "stop_previous_environment" stage_stop_previous_environment
 run_stage "start_tls_server" stage_start_tls_server
 run_stage "run_integration_tests" stage_run_integration_tests
+run_stage "collect_runtime_metrics" stage_collect_runtime_metrics
 run_stage "aggregate_results" stage_aggregate_results
 
 PIPELINE_END_NS="$(now_ns)"
