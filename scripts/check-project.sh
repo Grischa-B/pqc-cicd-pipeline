@@ -25,6 +25,7 @@ required_scripts=(
   "scripts/metrics/collect-runtime-metrics.py"
   "scripts/metrics/monitor-container-stats.py"
   "scripts/metrics/generate-combined-report.py"
+  "scripts/metrics/generate-charts.py"
   "scripts/crypto/list-capabilities.sh"
   "scripts/run-pipeline.sh"
   "scripts/run-all.sh"
@@ -83,6 +84,13 @@ required_reports=(
   "artifacts/reports/summary-all.md"
   "artifacts/reports/summary-all.csv"
   "artifacts/reports/summary-all.json"
+  "artifacts/reports/charts/avg-handshake-ms.svg"
+  "artifacts/reports/charts/handshake-range-ms.svg"
+  "artifacts/reports/charts/total-pipeline-duration-ms.svg"
+  "artifacts/reports/charts/test-stage-duration-ms.svg"
+  "artifacts/reports/charts/cpu-max-percent.svg"
+  "artifacts/reports/charts/memory-max-mib.svg"
+  "artifacts/reports/charts/cert-chain-size-bytes.svg"
 )
 
 for profile in "${PROFILES[@]}"; do

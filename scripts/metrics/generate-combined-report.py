@@ -130,7 +130,16 @@ def write_markdown(path: Path, rows: list[dict[str, Any]]) -> None:
             f"{row['server_memory_max_mib']} | `{row['server_net_io_latest']}` | "
             f"{row['cert_chain_size_bytes']} | {row['client_logs_total_size_bytes']} |"
         )
-
+    md_lines.append("")
+    md_lines.append("## Charts")
+    md_lines.append("")
+    md_lines.append("- [Average TLS handshake time](charts/avg-handshake-ms.svg)")
+    md_lines.append("- [TLS handshake time range](charts/handshake-range-ms.svg)")
+    md_lines.append("- [Total pipeline duration](charts/total-pipeline-duration-ms.svg)")
+    md_lines.append("- [Integration test stage duration](charts/test-stage-duration-ms.svg)")
+    md_lines.append("- [Maximum server CPU usage](charts/cpu-max-percent.svg)")
+    md_lines.append("- [Maximum server memory usage](charts/memory-max-mib.svg)")
+    md_lines.append("- [Certificate chain size](charts/cert-chain-size-bytes.svg)")
     md_lines.append("")
     md_lines.append("## Notes")
     md_lines.append("")

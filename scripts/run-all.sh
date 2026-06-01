@@ -20,4 +20,8 @@ echo
 echo "[run-all] Building combined reports..."
 python3 scripts/metrics/generate-combined-report.py "${PROFILES[@]}"
 
-echo "[run-all] Combined reports generated successfully."
+echo
+echo "[run-all] Building charts..."
+python3 scripts/metrics/generate-charts.py
+
+echo "[run-all] Combined reports and charts generated successfully."
