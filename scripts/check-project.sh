@@ -23,6 +23,7 @@ required_scripts=(
   "scripts/test/run-profile-tests.sh"
   "scripts/metrics/aggregate-results.py"
   "scripts/metrics/collect-runtime-metrics.py"
+  "scripts/metrics/monitor-container-stats.py"
   "scripts/crypto/list-capabilities.sh"
   "scripts/run-pipeline.sh"
   "scripts/run-all.sh"

@@ -91,7 +91,32 @@ stage_start_tls_server() {
 }
 
 stage_run_integration_tests() {
+  local stats_csv="artifacts/metrics/container-stats-${PROFILE}.csv"
+  local monitor_pid=""
+
+  rm -f "$stats_csv"
+
+  echo "[pipeline] Starting container stats monitor: $stats_csv"
+
+  python3 scripts/metrics/monitor-container-stats.py \
+    "pqc_tls_server" \
+    "$stats_csv" \
+    "0.2" &
+  monitor_pid="$!"
+
+  set +e
   ./scripts/test/run-profile-tests.sh "$PROFILE"
+  local test_rc=$?
+  set -e
+
+  if [[ -n "$monitor_pid" ]]; then
+    kill "$monitor_pid" >/dev/null 2>&1 || true
+    wait "$monitor_pid" >/dev/null 2>&1 || true
+  fi
+
+  echo "[pipeline] Container stats saved to: $stats_csv"
+
+  return "$test_rc"
 }
 
 stage_collect_runtime_metrics() {
