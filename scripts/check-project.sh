@@ -24,6 +24,7 @@ required_scripts=(
   "scripts/metrics/aggregate-results.py"
   "scripts/metrics/collect-runtime-metrics.py"
   "scripts/metrics/monitor-container-stats.py"
+  "scripts/metrics/generate-combined-report.py"
   "scripts/crypto/list-capabilities.sh"
   "scripts/run-pipeline.sh"
   "scripts/run-all.sh"

@@ -47,6 +47,7 @@ jobs:
           test -x scripts/metrics/aggregate-results.py
           test -x scripts/metrics/collect-runtime-metrics.py
           test -x scripts/metrics/monitor-container-stats.py
+          test -x scripts/metrics/generate-combined-report.py
           test -x scripts/crypto/list-capabilities.sh
           test -x scripts/run-pipeline.sh
           test -x scripts/run-all.sh
