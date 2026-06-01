@@ -98,6 +98,14 @@ artifacts/metrics/raw-classical.csv
 artifacts/metrics/raw-hybrid.csv
 artifacts/metrics/raw-pqc.csv
 
+artifacts/metrics/stages-classical.csv
+artifacts/metrics/stages-hybrid.csv
+artifacts/metrics/stages-pqc.csv
+
+artifacts/metrics/runtime-classical.csv
+artifacts/metrics/runtime-hybrid.csv
+artifacts/metrics/runtime-pqc.csv
+
 artifacts/reports/summary-classical.md
 artifacts/reports/summary-hybrid.md
 artifacts/reports/summary-pqc.md
@@ -105,24 +113,39 @@ artifacts/reports/summary-pqc.md
 artifacts/reports/summary-all.md
 artifacts/reports/summary-all.csv
 artifacts/reports/summary-all.json
+
+artifacts/reports/charts/*.svg
 ```
 
-The combined reports compare all profiles by success rate, TLS handshake time, negotiated key exchange group and certificate/key sizes.
+The combined reports compare all profiles by success rate, TLS handshake time, pipeline stage duration, sampled container resource usage, negotiated key exchange group and certificate/key sizes.
 
 ## Collected metrics
 
 The pipeline collects:
 
-* profile name;
-* iteration number;
-* handshake status;
-* TLS handshake time in milliseconds;
-* expected and actual key exchange group;
-* group verification evidence;
-* observed TLS version;
-* OpenSSL exit code;
-* error message, if present;
-* server key and certificate sizes.
+- TLS handshake status and duration;
+- expected and actual key exchange group;
+- group verification evidence;
+- observed TLS version;
+- OpenSSL exit code and error message;
+- per-stage pipeline duration;
+- total profile pipeline duration;
+- sampled TLS server CPU and memory usage during handshake tests;
+- server network I/O snapshot;
+- server key, certificate and certificate chain sizes;
+- client/server log sizes;
+- OpenSSL, Docker and Docker Compose version information;
+- Docker image IDs.
+
+The generated SVG charts visualize:
+
+- average TLS handshake time;
+- TLS handshake time range;
+- total pipeline duration;
+- integration test stage duration;
+- maximum sampled server CPU usage;
+- maximum sampled server memory usage;
+- certificate chain size.
 
 ## Cryptographic verification
 

@@ -76,12 +76,25 @@ If OpenSSL does not print the negotiated temporary key, but the connection succe
 restricted-single-group
 ```
 
-## Metrics and reports
+## Metrics, reports and charts
 
-Raw metrics are saved to:
+Raw handshake metrics are saved to:
 
 ```text
 artifacts/metrics/raw-<profile>.csv
+```
+
+Pipeline stage duration metrics are saved to:
+
+```text
+artifacts/metrics/stages-<profile>.csv
+```
+
+Runtime and resource metrics are saved to:
+
+```text
+artifacts/metrics/runtime-<profile>.csv
+artifacts/metrics/container-stats-<profile>.csv
 ```
 
 Per-profile summaries are saved to:
@@ -100,17 +113,27 @@ artifacts/reports/summary-all.csv
 artifacts/reports/summary-all.json
 ```
 
+Charts are generated as SVG files under:
+
+```text
+artifacts/reports/charts/
+```
+
 Main interpreted indicators:
 
-| Indicator                 | Meaning                                                 |
-| ------------------------- | ------------------------------------------------------- |
-| `success_rate`            | Reliability of the profile in repeated TLS handshakes   |
-| `avg_handshake_ms`        | Average TLS handshake time                              |
-| `median_handshake_ms`     | Median TLS handshake time                               |
-| `dominant_actual_group`   | Most frequently observed or inferred key exchange group |
-| `dominant_group_evidence` | Evidence used to confirm the actual group               |
-| `server_cert_size_bytes`  | Size of the generated server certificate                |
-| `server_key_size_bytes`   | Size of the generated server key                        |
+| Indicator                    | Meaning                                                  |
+| ---------------------------- | -------------------------------------------------------- |
+| `success_rate`               | Reliability of the profile in repeated TLS handshakes    |
+| `avg_handshake_ms`           | Average TLS handshake time                               |
+| `median_handshake_ms`        | Median TLS handshake time                                |
+| `total_pipeline_duration_ms` | Total duration of the profile pipeline run               |
+| `test_duration_ms`           | Duration of the integration test stage                   |
+| `server_cpu_max_percent`     | Maximum sampled CPU usage of the TLS server container    |
+| `server_memory_max_mib`      | Maximum sampled memory usage of the TLS server container |
+| `dominant_actual_group`      | Most frequently observed or inferred key exchange group  |
+| `dominant_group_evidence`    | Evidence used to confirm the actual group                |
+| `cert_chain_size_bytes`      | Combined size of the CA and server certificates          |
+| `server_key_size_bytes`      | Size of the generated server key                         |
 
 ## Reproduction
 
